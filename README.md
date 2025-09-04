@@ -33,6 +33,7 @@ Exclusions = [
     {"label_a":"整体偏亮","a_levels":[2,3,4], "label_b":"整体偏暗","b_levels":[2,3,4]},
     {"label_a":"整体对比度高","a_levels":[2,3,4], "label_b":"整体对比度低","b_levels":[2,3,4]},
     {"label_a":"高光过曝","a_levels":[2,3,4], "label_b":"高光压制过度","b_levels":[2,3,4]}
+]
 Subsumptions = [
 		# directed edges
     {"label_a":"整体偏亮", "label_b":"整体偏暗", "map":[[2,1]]},
