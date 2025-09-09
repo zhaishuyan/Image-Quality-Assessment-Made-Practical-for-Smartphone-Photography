@@ -2,13 +2,15 @@ import torch, pdb, copy
 import torch.nn as nn
 import numpy as np
 import itertools as it
+import torch.nn.functional as F
 
 
 class pLoss_all_fidelity(nn.Module):
     def __init__(self, hexG):
         super(pLoss_all_fidelity, self).__init__()
         self.legal_state = hexG
-        self.fideltiy_loss = Multi_Fidelity_Loss(False)
+        # self.my_loss = Multi_Fidelity_Loss(False)
+        self.my_loss = FocalLoss(gamma=0.5, alpha=10, reduction='mean')
 
 
     def forward(self, f, y):
@@ -28,7 +30,7 @@ class pLoss_all_fidelity(nn.Module):
         for i in range(f.shape[1]):
             pMargin[:, i] = torch.sum(J[S[:, i] > 0, :], dim=0) / z_
 
-        all_loss = self.fideltiy_loss(pMargin, y)
+        all_loss = self.my_loss(pMargin, y)
         return all_loss, pMargin
 
 
@@ -102,6 +104,63 @@ class Multi_Fidelity_Loss(torch.nn.Module):
         loss = loss / p.size(1)
 
         return torch.mean(loss)
+
+
+
+
+
+class FocalLoss(nn.Module):
+    def __init__(self, gamma=2, alpha=None, reduction='mean'):
+        """
+        Unified Focal Loss class for multi-label classification task.
+        :param gamma: Focusing parameter, controls the strength of the modulating factor (1 - p_t)^gamma
+        :param alpha: Balancing factor, can be a scalar or a tensor for class-wise weights. If None, no class balancing is used.
+        :param reduction: Specifies the reduction method: 'none' | 'mean' | 'sum'
+        """
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+        self.reduction = reduction
+
+
+    def forward(self, inputs, targets):
+        """
+        Focal loss for multi-label classification.
+        :param inputs: Predictions (logits) from the model.
+                       Shape:
+                         - binary/multi-label: (batch_size, num_classes)
+        :param targets: Ground truth labels.
+                        Shape:
+                         - multi-label: (batch_size, num_classes)
+        """
+
+        # probs = torch.sigmoid(inputs)
+        probs = inputs
+
+        # Compute binary cross entropy
+        # bce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
+        bce_loss = F.binary_cross_entropy(probs, targets, reduction='none')
+
+        # Compute focal weight
+        p_t = probs * targets + (1 - probs) * (1 - targets)
+        focal_weight = (1 - p_t) ** self.gamma
+
+        # Apply alpha if provided
+        if self.alpha is not None:
+            alpha_t = self.alpha * targets + (1 - self.alpha) * (1 - targets)
+            bce_loss = alpha_t * bce_loss
+
+        # Apply focal loss weight
+        loss = focal_weight * bce_loss
+
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss.sum()
+        return loss
+
+
+
 
 
 # utils for pLoss
