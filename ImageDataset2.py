@@ -115,7 +115,11 @@ class ImageDataset2(Dataset):
 
         all_node = np.array(mapped_values).reshape(-1)
 
-        sample = {'I': patches, 'all_node': all_node}
+        sample = {
+            'I': patches,
+            'filename': self.data.iloc[index, 0],
+            'all_node': all_node
+        }
         # sample = {'I': patches, 'attrib1': attribute1, 'attrib2': attribute2, 'attrib3': attribute3,
         #           'attrib4': attribute4, 'attrib5': attribute5, 'attrib6': attribute6}
 

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import pandas as pd
 # from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 import clip
@@ -17,7 +18,7 @@ import logging
 from my_loss import pLoss_all_fidelity
 from hex_graph import graph_SO_FFSC
 
-device = 'cuda:5' if torch.cuda.is_available() else 'cpu'
+device = 'cuda:6' if torch.cuda.is_available() else 'cpu'
 
 
 # class MLP(nn.Module):
@@ -51,15 +52,15 @@ def main():
     ckpt_path = '/data5/shuyanz/oppo_data/ckpt'  # path of checkpoint
     oppo_set = '/data5/shuyanz/oppo_data/second_and_third/'  # path of image
     root_path = '/data5/shuyanz/oppo_data/'  # path of csv file
-    oppo_train_csv = os.path.join(root_path, 'train_6labels.csv')
-    oppo_val_csv = os.path.join(root_path, 'val_6labels.csv')
-    oppo_test_csv = os.path.join(root_path, 'test_6labels.csv')
+    oppo_train_csv = os.path.join(root_path, 'train_6labels_less0.csv')
+    oppo_val_csv = os.path.join(root_path, 'val_6labels_less0.csv')
+    oppo_test_csv = os.path.join(root_path, 'test_6labels_less0.csv')
 
     num_node = 18  # number of node
 
     lr_clip = 1e-6
     lr_head = 1e-3
-    num_epoch = 10
+    num_epoch = 50
     batch_size = 50
     num_patch = 5
     num_workers = 8
@@ -95,8 +96,8 @@ def main():
     criterion = pLoss_all_fidelity(hexG=graph_SO_FFSC())
 
     train_loader = set_dataset(oppo_train_csv, batch_size, oppo_set, num_workers, preprocess3, num_patch, False)
-    val_loader = set_dataset(oppo_val_csv, batch_size, oppo_set, num_workers, preprocess2, 15, True)
-    test_loader = set_dataset(oppo_test_csv, batch_size, oppo_set, num_workers, preprocess2, 15, True)
+    val_loader = set_dataset(oppo_val_csv, batch_size, oppo_set, num_workers, preprocess2, 5, True)
+    test_loader = set_dataset(oppo_test_csv, batch_size, oppo_set, num_workers, preprocess2, 5, True)
 
     # result_pkl = {}
     # 需要改输入
@@ -200,9 +201,9 @@ def train_single_epoch(model, best_result, best_epoch, train_loader, val_loader,
 
     if (epoch >= 0):
         acc_bright, acc_dark, acc_low_contrast, acc_high_contrast, acc_overexposed, acc_over_suppressed, acc_all = (
-            eval(model, criterion, val_loader, phase='val', dataset='oppo'))
+            eval(model, criterion, val_loader, phase='val', dataset='oppo', epoch=epoch))
         acc_bright1, acc_dark1, acc_low_contrast1, acc_high_contrast1, acc_overexposed1, acc_over_suppressed1, acc_all1 = (
-            eval(model, criterion, test_loader, phase='test', dataset='oppo'))
+            eval(model, criterion, test_loader, phase='test', dataset='oppo', epoch=epoch))
 
         print_text_val = 'val acc results:' + 'bright:{}, dark:{}, low_contrast:{}, high_contrast:{}, overexposed:{}, over_suppressed:{}, all:{}'.format(
             acc_bright, acc_dark, acc_low_contrast, acc_high_contrast, acc_overexposed, acc_over_suppressed, acc_all)
@@ -246,10 +247,10 @@ def compute_num_graph(pred, gt, threshold=0.5):
 
     return torch.sum(true_num[:, 0]), torch.sum(true_num[:, 1]), torch.sum(
         true_num[:, 2]), torch.sum(true_num[:, 3]), torch.sum(true_num[:, 4]), torch.sum(
-        true_num[:, 5])
+        true_num[:, 5]), pred_mapped, gt_mapped
 
 
-def eval(model, criterion, loader, phase, dataset):
+def eval(model, criterion, loader, phase, dataset, epoch):
     model.eval()
 
     bright_num = 0
@@ -258,9 +259,10 @@ def eval(model, criterion, loader, phase, dataset):
     high_contrast_num = 0
     overexposed_num = 0
     over_suppressed_num = 0
+    csv_rows = []
 
     for step, sample_batched in enumerate(loader, 0):
-        x, all_node = sample_batched['I'], sample_batched['all_node']
+        x, filenames, all_node = sample_batched['I'], sample_batched['filename'], sample_batched['all_node']
 
         x = x.to(device)
         all_node_gt = all_node.to(device)
@@ -271,13 +273,21 @@ def eval(model, criterion, loader, phase, dataset):
             logits_per_image = do_batch(model, x)
 
         pMargin = criterion.infer(logits_per_image)
-        num1, num2, num3, num4, num5, num6 = compute_num_graph(pMargin, all_node_gt)
+        num1, num2, num3, num4, num5, num6, pred_mapped, gt_mapped = compute_num_graph(pMargin, all_node_gt)
         bright_num += num1
         dark_num += num2
         low_contrast_num += num3
         high_contrast_num += num4
         overexposed_num += num5
         over_suppressed_num += num6
+        pred_list = pred_mapped.detach().cpu().tolist()  # List[List[int]]，每样本长度6
+        gt_list = gt_mapped.detach().cpu().tolist()
+        for f, p, g in zip(filenames, pred_list, gt_list):
+            csv_rows.append({
+                "filename": f,
+                "pred_label": ",".join(map(str, p)),
+                "gt_label": ",".join(map(str, g)),
+            })
 
     B = len(loader.dataset)
     acc_bright = bright_num.item() / B
@@ -288,6 +298,12 @@ def eval(model, criterion, loader, phase, dataset):
     acc_over_suppressed = over_suppressed_num.item() / B
     acc_all = (bright_num + dark_num + low_contrast_num + high_contrast_num + overexposed_num + over_suppressed_num).item() / (
                       B * 6)
+
+    if (epoch+1)%10==0 and phase in ('val', 'test'):
+        out_csv = f"output/{dataset}_{phase}_{epoch}.csv"  # 每个 epoch 会覆盖一次；如需按 epoch 存，可自行加上 epoch 编号
+        df = pd.DataFrame(csv_rows, columns=["filename", "pred_label", "gt_label"])
+        df.to_csv(out_csv, index=False, encoding='utf-8')
+        print(f"[Saved] {out_csv} ({len(df)} rows)")
 
     print_text = dataset + ' ' + phase + ' finished'
     print(print_text)

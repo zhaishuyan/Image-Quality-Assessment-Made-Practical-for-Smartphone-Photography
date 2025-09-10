@@ -18,7 +18,7 @@ We establish the relationships among quality labels by constructing a HEX graph 
 - Constructed a 6-label HEX graph for initial validation
 
 ```
-Labels = [ 整体偏亮, 整体偏暗, 整体对比度高, 整体对比度低, 高光过曝, 高光压制过度]
+Labels = [ "整体偏亮", "整体偏暗", "整体对比度高", "整体对比度低", "高光过曝", "高光压制过度"]
 Levels = { "0": "不存在相应问题", "1": "普通", "2": "严重", "3": "阻塞"}
 Nodes = [
     {"label":"整体偏亮","levels":[1,2,3,4]},
@@ -36,12 +36,15 @@ Exclusions = [
 ]
 Subsumptions = [
 		# directed edges
-    {"label_a":"整体偏亮", "label_b":"整体偏暗", "map":[[1,1]]},
-    {"label_a":"整体对比度高"，"label_b":"整体对比度低", "map":[[1,1]]},
-    {"label_a":"高光过曝"，"label_b":"高光压制过度", "map":[[1,1]]}
+    {"label_a":"整体偏亮", "label_b":"整体偏亮", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体偏暗", "label_b":"整体偏暗", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体对比度高", "label_b":"整体对比度高", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体对比度低", "label_b":"整体对比度低", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"高光过曝", "label_b":"高光过曝", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"高光压制过度", "label_b":"高光压制过度", "map":[[3,2],[4,2],[4,3]]}
 ]
 ```
-  
+
 - Prepared data with the six labels
 
 | Dataset    | Total | Has Issue | No Issue | bright | dark | low_contrast | high_contrast | overexposed | over_suppressed |
@@ -50,14 +53,19 @@ Subsumptions = [
 | Train      | 1638  | 278       | 1360     | 56     | 97   | 40           | 57            | 13          | 19              |
 | Validation | 352   | 65        | 287      | 7      | 27   | 9            | 8             | 7           | 8               |
 | Test       | 352   | 58        | 294      | 12     | 22   | 8            | 11            | 3           | 5               |
-  
-- Implemented code using CLIP as the base model
+
+- Implemented code
 
   - CLIP image encoder
- 
-  - HEX graph loss
 
+  - HEX graph probability
 
-### 🔄 In Progress
+  - Focal loss
 
-### 🔜 Next Steps
+- Accuracy report
+
+| label    | bright  | dark   | low_contrast | high_contrast | overexposed | over_suppressed | total  |
+| -------- | ------- | ------ | ------------ | ------------- | ----------- | --------------- | ------ |
+| Accuracy | 0.93212 | 0.8461 | 0.9457       | 0.9321        | 0.9909      | 0.9773          | 0.9660 |
+
+The specific prediction results on the test set have been uploaded to the "output/oppo_test_49.csv" file, which includes both the predicted results and the true labels.
