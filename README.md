@@ -64,8 +64,8 @@ Subsumptions = [
 
 - Accuracy report
 
-| label    | bright  | dark   | low_contrast | high_contrast | overexposed | over_suppressed | total  |
+| Label    | bright  | dark   | low_contrast | high_contrast | overexposed | over_suppressed | total  |
 | -------- | ------- | ------ | ------------ | ------------- | ----------- | --------------- | ------ |
 | Accuracy | 0.93212 | 0.8461 | 0.9457       | 0.9321        | 0.9909      | 0.9773          | 0.9660 |
 
-The specific prediction results on the test set have been uploaded to the "output/oppo_test_49.csv" file, which includes both the predicted results and the true labels.
+The specific prediction results on the test set and validation set have been uploaded to the "output/oppo_test_49.csv" file, which includes both the predicted results and the true labels.
