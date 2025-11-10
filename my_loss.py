@@ -6,11 +6,11 @@ import torch.nn.functional as F
 
 
 class pLoss_all_fidelity(nn.Module):
-    def __init__(self, hexG):
+    def __init__(self, hexG, alpha=0.8, gamma=2):
         super(pLoss_all_fidelity, self).__init__()
         self.legal_state = hexG
         # self.my_loss = Multi_Fidelity_Loss(False)
-        self.my_loss = FocalFidelityLoss()
+        self.my_loss = FocalFidelityLoss(gamma=gamma, alpha=alpha)
 
 
     def forward(self, f, y):
@@ -106,22 +106,6 @@ class Multi_Fidelity_Loss(torch.nn.Module):
         return torch.mean(loss)
 
 
-# class Focal_Fidelity_Loss(torch.nn.Module):
-#     def __init__(self, gamma=2, alpha=0.25, eps=1e-8):
-#         super(Focal_Fidelity_Loss, self).__init__()
-#         self.gamma = gamma
-#         self.alpha = alpha
-#         self.eps = eps
-#
-#     def forward(self, p, g):
-#         g = g.view(-1, 1)
-#         p = p.view(-1, 1)
-#
-#         pos_loss = self.alpha * (p**self.gamma) * torch.sqrt(p * g + self.eps)
-#         neg_loss = (1 - self.alpha) * ((1 - p)**self.gamma) * torch.sqrt((1 - p) * (1 - g) + self.eps)
-#
-#         focal_fidelity_loss = 1 - pos_loss - neg_loss
-#         return torch.mean(focal_fidelity_loss)
 class FocalFidelityLoss(torch.nn.Module):
     def __init__(self, gamma=2, alpha=0.75, reduction='mean'):
         super(FocalFidelityLoss, self).__init__()
@@ -138,7 +122,10 @@ class FocalFidelityLoss(torch.nn.Module):
         p_t = p * g + (1 - p) * (1 - g)
         alpha_t = self.alpha * g + (1 - self.alpha) * (1 - g)
         loss = (1 - fidelity) * alpha_t * (1 - p_t) ** self.gamma
+        # loss = loss.sum(dim=1)
         return loss.mean()
+
+
 
 
 
@@ -151,3 +138,4 @@ def _check_abnornal(z_):
     else:
         id_num = [-1]
     return id_num
+

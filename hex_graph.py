@@ -2,6 +2,7 @@ import itertools as it
 import numpy as np
 import torch
 import torch.nn as nn
+import itertools
 
 class pLoss(nn.Module):
     def __init__(self, hexG):
@@ -92,21 +93,53 @@ def list_legal_states(Ee, Eh, n_nodes: int = None) -> torch.Tensor:
     S_legal = S[keep]
     return torch.tensor(S_legal, dtype=torch.int64)
 
-def graph_SO_FFSC():
-    Eh_edge = [
-        (2,0), (2,1), (1,0),
-        (5,3), (5,4), (4,3),
-        (8,6), (8,7), (7,6),
-        (11,9), (11,10), (10,9),
-        (14,12), (14,13), (13,12),
-        (17,15), (17,16), (16,15)
-    ]
-    Ee_edge = [
-        (0,3), (6,9), (12,15)
-    ]
-    state = list_legal_states(Ee_edge, Eh_edge, n_nodes=18)
-    # print(state.shape)
-    # print(state)
-    return state
+# def graph_SO_FFSC():
+#     Eh_edge = [
+#         (2, 0), (2, 1), (1, 0),
+#         (5, 3), (5, 4), (4, 3),
+#         (8, 6), (8, 7), (7, 6),
+#         (11, 9), (11, 10), (10, 9),
+#         (14, 12), (14, 13), (13, 12),
+#         (17, 15), (17, 16), (16, 15),
+#         (20, 18), (20, 19), (19, 18),
+#         (23, 21), (23, 22), (22, 21),
+#         (26, 24), (26, 25), (25, 24),
+#         (29, 27), (29, 28), (28, 27),
+#         (32, 30), (32, 31), (31, 30),
+#         (35, 33), (35, 34), (34, 33)
+#     ]
+#     Ee_edge = [(0, 3), (6, 9), (12, 15), (18, 21), (24, 27), (18, 24), (18, 27), (21, 24), (21, 27), (30, 33)]
+#     state = list_legal_states(Ee_edge, Eh_edge, n_nodes=36)
+#     # print(state.shape)
+#     # print(state)
+#     return state
 
-# graph_SO_FFSC()
+def graph_SO_FFSC():
+    # 定义两个互斥attribute的所有状态
+    states2 = [
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 1, 1, 0],
+        [0, 0, 0, 1, 1, 1],
+        [1, 0, 0, 0, 0, 0],
+        [1, 1, 0, 0, 0, 0],
+        [1, 1, 1, 0, 0, 0]
+    ]
+    # 3个互斥attributes的所有合法状态：10种
+    states3 = np.array([
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 1, 0],
+        [0, 0, 0, 0, 0, 0, 1, 1, 1],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 0, 0, 0, 0, 0, 0]
+    ])
+    legal_all = np.array([
+        np.concatenate(combination)
+        for combination in itertools.product(states2, states2, states3)
+    ])
+    return torch.tensor(legal_all, dtype=torch.int64)

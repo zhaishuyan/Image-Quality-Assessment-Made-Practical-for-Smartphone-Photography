@@ -64,9 +64,9 @@ Subsumptions = [
 
 - Accuracy report
 
-| Label    | bright  | dark   | low_contrast | high_contrast | overexposed | over_suppressed | total  |
-| -------- | ------- | ------ | ------------ | ------------- | ----------- | --------------- | ------ |
-| Accuracy | 0.93212 | 0.8461 | 0.9457       | 0.9321        | 0.9909      | 0.9773          | 0.9660 |
+| Label    | bright | dark   | low_contrast | high_contrast | overexposed | over_suppressed | total  |
+| -------- | ------ | ------ | ------------ | ------------- | ----------- | --------------- | ------ |
+| Accuracy | 0.9321 | 0.8461 | 0.9457       | 0.9321        | 0.9909      | 0.9773          | 0.9660 |
 
 The specific prediction results on the test set and validation set have been uploaded to the "output/oppo_test_99.csv" file, which includes both the predicted results and the true labels.
 
@@ -87,4 +87,48 @@ The specific prediction results on the test set and validation set have been upl
   | Accuracy | 0.9864 | 0.8959 | 0.9773       | 0.9638        | 0.9864      | 0.9909          | 0.9668 |
 
 ![](imgs/curves_all_v2.png)
+
+### v3. 12 labels
+
+fine-tune based on the 6-label model
+
+```
+Labels = [ "整体偏亮", "整体偏暗", "整体对比度高", "整体对比度低", "高光过曝", "高光压制过度","整体白平衡偏红","整体白平衡偏蓝","整体白平衡偏绿","整体白平衡偏黄","暗部死黑","暗部提亮过度"]
+Levels = { "1": "不存在相应问题", "2": "普通", "3": "严重", "4": "阻塞"}
+Nodes = [
+    {"label":"整体偏亮","levels":[1,2,3,4]},
+    {"label":"整体偏暗","levels":[1,2,3,4]},
+    {"label":"整体对比度高","levels":[1,2,3,4]},
+    {"label":"整体对比度低","levels":[1,2,3,4]},
+    {"label":"高光过曝","levels":[1,2,3,4]},
+    {"label":"高光压制过度","levels":[1,2,3,4]}
+  ]
+Exclusions = [
+		# undirected edges
+    {"label_a":"整体偏亮","a_levels":[2,3,4], "label_b":"整体偏暗","b_levels":[2,3,4]},
+    {"label_a":"整体对比度高","a_levels":[2,3,4], "label_b":"整体对比度低","b_levels":[2,3,4]},
+    {"label_a":"高光过曝","a_levels":[2,3,4], "label_b":"高光压制过度","b_levels":[2,3,4]},
+    {"label_a":"整体白平衡偏红","a_levels":[2,3,4], "label_b":"整体白平衡偏蓝","b_levels":[2,3,4]},
+    {"label_a":"整体白平衡偏红","a_levels":[2,3,4], "label_b":"整体白平衡偏绿","b_levels":[2,3,4]},
+    {"label_a":"整体白平衡偏红","a_levels":[2,3,4], "label_b":"整体白平衡偏黄","b_levels":[2,3,4]},
+    {"label_a":"整体白平衡偏蓝","a_levels":[2,3,4], "label_b":"整体白平衡偏绿","b_levels":[2,3,4]},
+    {"label_a":"整体白平衡偏蓝","a_levels":[2,3,4], "label_b":"整体白平衡偏黄","b_levels":[2,3,4]},
+    {"label_a":"整体白平衡偏绿","a_levels":[2,3,4], "label_b":"整体白平衡偏黄","b_levels":[2,3,4]},
+    {"label_a":"暗部死黑","a_levels":[2,3,4], "label_b":"暗部提亮过度","b_levels":[2,3,4]}
+]
+Subsumptions = [
+		# directed edges
+    {"label_a":"整体偏亮", "label_b":"整体偏亮", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体偏暗", "label_b":"整体偏暗", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体对比度高", "label_b":"整体对比度高", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体对比度低", "label_b":"整体对比度低", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"高光过曝", "label_b":"高光过曝", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体白平衡偏红", "label_b":"整体白平衡偏红", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体白平衡偏蓝", "label_b":"整体白平衡偏蓝", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体白平衡偏绿", "label_b":"整体白平衡偏绿", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"整体白平衡偏黄", "label_b":"整体白平衡偏黄", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"暗部死黑", "label_b":"暗部死黑", "map":[[3,2],[4,2],[4,3]]},
+    {"label_a":"暗部提亮过度", "label_b":"暗部提亮过度", "map":[[3,2],[4,2],[4,3]]}
+]
+```
 

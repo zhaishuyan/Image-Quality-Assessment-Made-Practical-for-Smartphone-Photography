@@ -13,7 +13,7 @@ def build_prompts(attrs, levels, templates=None):
     if templates is None:
         templates = ["{attr}, {level}"]
     phrases_per_class = []
-    for a in enumerate(attrs):
+    for a in attrs:
         for l in levels:
             phrases_per_class.append([t.format(attr=a, level=l) for t in templates])
     if len(templates) == 1:

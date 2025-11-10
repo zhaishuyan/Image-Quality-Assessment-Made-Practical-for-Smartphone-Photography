@@ -39,6 +39,7 @@ class ImageDataset2(Dataset):
                  preprocess,
                  num_patch,
                  test,
+                 num_problems=6,
                  get_loader=get_default_img_loader):
         """
         Args:
@@ -53,6 +54,7 @@ class ImageDataset2(Dataset):
         self.preprocess = preprocess
         self.num_patch = num_patch
         self.test = test
+        self.num_problems = num_problems
         self.mapping = {
             0: [0, 0, 0],
             1: [1, 0, 0],
@@ -96,32 +98,20 @@ class ImageDataset2(Dataset):
             sel = torch.randint(low=0, high=patches.size(0), size=(self.num_patch, ))
         patches = patches[sel, ...]
 
-        attrib1 = int(self.data.iloc[index, 1])
-        attrib2 = int(self.data.iloc[index, 2])
-        attrib3 = int(self.data.iloc[index, 3])
-        attrib4 = int(self.data.iloc[index, 4])
-        attrib5 = int(self.data.iloc[index, 5])
-        attrib6 = int(self.data.iloc[index, 6])
-
-
-        mapped_values = [
-            self.mapping[attrib1], 
-            self.mapping[attrib2], 
-            self.mapping[attrib3], 
-            self.mapping[attrib4],
-            self.mapping[attrib5],
-            self.mapping[attrib6]
-        ]
-
-        all_node = np.array(mapped_values).reshape(-1)
+        attributes = []
+        if self.data.shape[1] > 1:
+            for i in range(self.num_problems):
+                attributes.append(int(self.data.iloc[index, i + 1]))
+            mapped_values = [self.mapping[attrib] for attrib in attributes]
+            all_node = np.array(mapped_values).reshape(-1)
+        else:
+            all_node = np.array([])
 
         sample = {
             'I': patches,
             'filename': self.data.iloc[index, 0],
             'all_node': all_node
         }
-        # sample = {'I': patches, 'attrib1': attribute1, 'attrib2': attribute2, 'attrib3': attribute3,
-        #           'attrib4': attribute4, 'attrib5': attribute5, 'attrib6': attribute6}
 
         return sample
 
